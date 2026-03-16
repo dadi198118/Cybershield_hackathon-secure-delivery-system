@@ -1,27 +1,23 @@
-## Cybershield_hackathon-secure-delivery-system
-Deception-Driven Secure Data Architecture for Citizen Information Systems using decoy database and intrusion detection using honey pots
+#TrustChain
+#Verified Government Document Delivery Platform
 
+A secure e-governance platform that delivers verified government documents to citizens digitally — backed by blockchain integrity verification and behavioural anomaly detection.
 
-A cybersecurity prototype that demonstrates how deception security can protect sensitive citizen databases by misleading attackers into interacting with a decoy (honeypot) database while the real data remains protected.
+#Problem Statement
+Getting a government document in India today — income certificate, caste certificate, land record — means visiting offices, waiting weeks, and carrying physical papers. When institutions receive these documents they have no easy way to confirm they are genuine. Document fraud is rampant. Manual verification is slow.
+TrustChain solves both sides of this problem.
 
-The system detects suspicious activity, logs attacks, and visualizes threats in a Security Operations Center dashboard.
+#What We Built
+A platform where citizens request verified government documents digitally using their Aadhaar identity, and any institution — bank, university, employer — can cryptographically verify those documents are genuine in under 2 seconds.
+Every document issued is fingerprinted using SHA-256 and recorded on a blockchain permanently. Verification checks the current document hash against the blockchain record. Any tampering is detected instantly.
+A behavioural analysis layer monitors every institution using the API and automatically blocks bulk data harvesting attempts — even when the access credentials are completely valid. This is the gap no existing verification platform fills.
 
-# Project Overview
+#Core Features
 
-Traditional database security focuses only on defense (firewalls, encryption, authentication). However, once an attacker bypasses those defenses, they can often access sensitive information undetected.
-This project introduces a deception-based defense architecture where suspicious users are redirected to a fake but realistic database, allowing the system to Protect real citizen data,Monitor attacker behavior,
-Detect malicious activity and Visualize attacks in real time
-
-Key Features
-
-* Security Gateway that analyzes every request
-* Real database containing legitimate citizen data
-* Decoy database (honeypot) containing fake citizen data
-* Honey tokens that trigger alerts when accessed
-* Automatic routing of suspicious users to the decoy database
-* Attack logging and monitoring
-* Dashboard for real-time monitoring
-
-
-
-
+Aadhaar OTP based citizen authentication
+Instant issuance of 6 government document types
+SHA-256 document hashing recorded on blockchain at issue time
+2-second cryptographic verification for banks, universities, employers
+Behavioural analysis detecting bulk harvesting through legitimate channels
+Immutable blockchain audit log of every issue, verification, and suspicious event
+Real-time admin dashboard with live alert feed
