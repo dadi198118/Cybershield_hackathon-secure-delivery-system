@@ -1,0 +1,137 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8"/>
+<meta name="viewport" content="width=device-width,initial-scale=1"/>
+<title>TrustChain — Admin Dashboard</title>
+<style>
+*{box-sizing:border-box;margin:0;padding:0}
+body{font-family:'Segoe UI',system-ui,sans-serif;background:#0d1117;color:#e6edf3;min-height:100vh}
+header{padding:16px 24px;border-bottom:1px solid #30363d;display:flex;align-items:center;gap:14px;background:#161b22}
+header h1{font-size:1.2rem;font-weight:600}
+.live{background:#1a3a1a;color:#3fb950;border:1px solid #3fb950;border-radius:20px;font-size:.72rem;padding:3px 10px;animation:pulse 2s infinite;margin-left:auto}
+@keyframes pulse{0%,100%{opacity:1}50%{opacity:.5}}
+.main{padding:20px 24px;display:flex;flex-direction:column;gap:16px}
+.stats{display:grid;grid-template-columns:repeat(4,1fr);gap:12px}
+.stat{background:#161b22;border:1px solid #30363d;border-radius:10px;padding:16px 18px}
+.stat .label{font-size:.75rem;color:#8b949e;margin-bottom:6px}
+.stat .value{font-size:1.9rem;font-weight:700}
+.stat.blue .value{color:#58a6ff}
+.stat.green .value{color:#3fb950}
+.stat.amber .value{color:#d29922}
+.stat.red .value{color:#f85149}
+.panel{background:#161b22;border:1px solid #30363d;border-radius:10px;overflow:hidden}
+.panel-hdr{padding:12px 16px;border-bottom:1px solid #30363d;font-size:.85rem;font-weight:600}
+.feed{max-height:400px;overflow-y:auto}
+.feed-row{padding:10px 16px;border-bottom:1px solid #21262d;font-size:.8rem;display:grid;grid-template-columns:60px 130px 1fr auto;gap:10px;align-items:center;animation:slide .25s ease}
+@keyframes slide{from{opacity:0;transform:translateY(-4px)}to{opacity:1;transform:none}}
+.feed-row.doc{border-left:3px solid #3fb950}
+.feed-row.verify{border-left:3px solid #58a6ff}
+.feed-row.suspicious{border-left:3px solid #f85149}
+.pill{border-radius:20px;padding:2px 10px;font-size:.7rem;font-weight:600}
+.pill.doc{background:#1a2d1a;color:#3fb950;border:1px solid #3fb950}
+.pill.verify{background:#1a2535;color:#58a6ff;border:1px solid #58a6ff}
+.pill.suspicious{background:#2d1a1a;color:#f85149;border:1px solid #f85149}
+.ts{color:#8b949e;font-size:.73rem}
+.detail{color:#8b949e;font-size:.75rem;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.chain-box{background:#161b22;border:1px solid #30363d;border-radius:10px;padding:16px 18px}
+.chain-valid{color:#3fb950;font-weight:600}
+.chain-invalid{color:#f85149;font-weight:600}
+::-webkit-scrollbar{width:5px}
+::-webkit-scrollbar-thumb{background:#30363d;border-radius:3px}
+</style>
+</head>
+<body>
+<header>
+  <span style="font-size:1.4rem">🔐</span>
+  <h1>TrustChain — Admin Dashboard</h1>
+  <div class="live">● LIVE</div>
+  <a href="/" style="color:#8b949e;font-size:.82rem;margin-left:16px;text-decoration:none">← Citizen Portal</a>
+</header>
+
+<div class="main">
+  <div class="stats">
+    <div class="stat blue"><div class="label">Total Requests</div><div class="value" id="s-total">0</div></div>
+    <div class="stat green"><div class="label">Documents Issued</div><div class="value" id="s-docs">0</div></div>
+    <div class="stat blue"><div class="label">Verifications</div><div class="value" id="s-verify">0</div></div>
+    <div class="stat red"><div class="label">Suspicious Blocked</div><div class="value" id="s-sus">0</div></div>
+  </div>
+
+  <div class="panel">
+    <div class="panel-hdr">📡 Live Activity Feed</div>
+    <div style="display:grid;grid-template-columns:60px 130px 1fr auto;gap:10px;padding:8px 16px;font-size:.72rem;color:#8b949e;border-bottom:1px solid #21262d">
+      <span>Time</span><span>Event</span><span>Details</span><span>Status</span>
+    </div>
+    <div class="feed" id="feed"></div>
+  </div>
+
+  <div class="chain-box">
+    <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:12px">
+      <span style="font-weight:600;font-size:.9rem">⛓ Blockchain Status</span>
+      <button onclick="checkChain()" style="background:#21262d;border:1px solid #30363d;color:#e6edf3;padding:5px 14px;border-radius:6px;cursor:pointer;font-size:.78rem">Verify Chain</button>
+    </div>
+    <div style="display:grid;grid-template-columns:repeat(4,1fr);gap:10px">
+      <div><div style="font-size:.73rem;color:#8b949e;margin-bottom:4px">Total blocks</div><div id="c-blocks" style="font-weight:600">—</div></div>
+      <div><div style="font-size:.73rem;color:#8b949e;margin-bottom:4px">Docs on chain</div><div id="c-docs" style="font-weight:600">—</div></div>
+      <div><div style="font-size:.73rem;color:#8b949e;margin-bottom:4px">Verifications</div><div id="c-verif" style="font-weight:600">—</div></div>
+      <div><div style="font-size:.73rem;color:#8b949e;margin-bottom:4px">Chain integrity</div><div id="c-valid" style="font-weight:600">—</div></div>
+    </div>
+  </div>
+</div>
+
+<script>
+const es = new EventSource('/api/admin/alerts');
+es.onmessage = e => {
+  const d = JSON.parse(e.data);
+  if(d.type==='connected') return;
+  appendFeed(d);
+  refreshStats();
+};
+
+function appendFeed(d){
+  const feed = document.getElementById('feed');
+  const row  = document.createElement('div');
+  const type = d.type.toLowerCase();
+  const cls  = type==='document_issued'?'doc':type==='verification'?'verify':'suspicious';
+  row.className = 'feed-row '+cls;
+  const pill = `<span class="pill ${cls}">${
+    type==='document_issued'?'Issued':type==='verification'?'Verified':'Suspicious'}</span>`;
+  const detail = type==='document_issued'
+    ? `${d.doc_type?.replace(/_/g,' ')} → ${d.issued_to} · block: ${d.block||''}`
+    : type==='verification'
+    ? `${d.doc_id} by ${d.verifier} → ${d.result}`
+    : `${d.verifier} — ${d.signals||''}`;
+  row.innerHTML = `<span class="ts">${d.timestamp}</span>${pill}<span class="detail">${detail}</span><span></span>`;
+  feed.prepend(row);
+  while(feed.children.length>100) feed.removeChild(feed.lastChild);
+}
+
+async function refreshStats(){
+  const r = await fetch('/api/admin/stats');
+  const d = await r.json();
+  document.getElementById('s-total').textContent  = d.total_requests||0;
+  document.getElementById('s-docs').textContent   = d.docs_issued||0;
+  document.getElementById('s-verify').textContent = d.verifications||0;
+  document.getElementById('s-sus').textContent    = d.suspicious_blocked||0;
+  document.getElementById('c-blocks').textContent = d.total_blocks||0;
+  document.getElementById('c-docs').textContent   = d.docs_issued||0;
+  document.getElementById('c-verif').textContent  = d.verifications||0;
+  const valid = d.chain_valid;
+  const el = document.getElementById('c-valid');
+  el.textContent = valid ? '✓ Valid' : '✗ Broken';
+  el.className   = valid ? 'chain-valid' : 'chain-invalid';
+}
+
+async function checkChain(){
+  const r = await fetch('/api/chain/verify');
+  const d = await r.json();
+  alert(d.valid
+    ? `✓ Chain is valid — ${d.total_blocks} blocks verified`
+    : `✗ Chain broken at block ${d.broken_at}`);
+}
+
+refreshStats();
+setInterval(refreshStats, 3000);
+</script>
+</body>
+</html>

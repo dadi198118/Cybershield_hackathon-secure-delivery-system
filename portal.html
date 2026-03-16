@@ -1,0 +1,317 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8"/>
+<meta name="viewport" content="width=device-width,initial-scale=1"/>
+<title>TrustChain — Citizen Portal</title>
+<style>
+*{box-sizing:border-box;margin:0;padding:0}
+body{font-family:'Segoe UI',system-ui,sans-serif;background:#f4f6fb;color:#1a1a2e;min-height:100vh}
+header{background:#1a3a6b;color:#fff;padding:16px 28px;display:flex;align-items:center;gap:14px}
+header h1{font-size:1.25rem;font-weight:600}
+header .sub{font-size:0.8rem;opacity:.75;margin-top:2px}
+.badge{background:#22c55e;color:#fff;border-radius:20px;padding:3px 12px;font-size:0.72rem;margin-left:auto}
+.main{max-width:900px;margin:32px auto;padding:0 20px}
+.card{background:#fff;border-radius:14px;padding:28px;box-shadow:0 2px 12px rgba(0,0,0,.07);margin-bottom:20px}
+.card h2{font-size:1rem;font-weight:600;color:#1a3a6b;margin-bottom:18px}
+label{display:block;font-size:0.82rem;color:#555;margin-bottom:5px;font-weight:500}
+input,select{width:100%;padding:10px 14px;border:1.5px solid #dde;border-radius:8px;font-size:0.9rem;outline:none;transition:border .2s}
+input:focus,select:focus{border-color:#1a3a6b}
+.btn{background:#1a3a6b;color:#fff;border:none;padding:11px 24px;border-radius:8px;font-size:0.9rem;cursor:pointer;width:100%;margin-top:12px;transition:background .2s}
+.btn:hover{background:#14305a}
+.btn.outline{background:#fff;color:#1a3a6b;border:1.5px solid #1a3a6b}
+.btn.green{background:#16a34a}
+.btn.sm{width:auto;padding:7px 16px;font-size:0.8rem}
+.row{display:grid;grid-template-columns:1fr 1fr;gap:14px}
+.alert{padding:12px 16px;border-radius:8px;font-size:0.85rem;margin-bottom:12px}
+.alert.success{background:#f0fdf4;color:#166534;border:1px solid #bbf7d0}
+.alert.error{background:#fef2f2;color:#991b1b;border:1px solid #fecaca}
+.alert.info{background:#eff6ff;color:#1d4ed8;border:1px solid #bfdbfe}
+.doc-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:14px}
+.doc-tile{background:#f8faff;border:1.5px solid #dde6f7;border-radius:10px;padding:16px;cursor:pointer;transition:all .2s}
+.doc-tile:hover{border-color:#1a3a6b;background:#eff4ff}
+.doc-tile .icon{font-size:1.8rem;margin-bottom:8px}
+.doc-tile .name{font-size:0.82rem;font-weight:600;color:#1a3a6b}
+.doc-tile .dept{font-size:0.72rem;color:#888;margin-top:3px}
+.doc-list{display:flex;flex-direction:column;gap:10px}
+.doc-item{background:#f8faff;border:1px solid #dde6f7;border-radius:8px;padding:14px 16px;display:flex;align-items:center;gap:14px}
+.doc-item .doc-info{flex:1}
+.doc-item .doc-name{font-weight:600;font-size:0.88rem;color:#1a3a6b}
+.doc-item .doc-meta{font-size:0.75rem;color:#888;margin-top:3px}
+.hash-pill{background:#f0f0ff;color:#4f46e5;border-radius:20px;padding:3px 10px;font-size:0.7rem;font-family:monospace}
+.chain-block{background:#f0fdf4;border:1px solid #bbf7d0;border-radius:8px;padding:12px 14px;font-size:0.78rem;margin-bottom:8px}
+.chain-block .block-header{font-weight:600;color:#166534;margin-bottom:4px}
+.chain-block .block-hash{font-family:monospace;color:#555;font-size:0.72rem;word-break:break-all}
+#screen-login,#screen-dashboard,#screen-request,#screen-mydocs,#screen-docdetail{display:none}
+.nav{display:flex;gap:10px;margin-bottom:20px}
+.nav-btn{background:#fff;border:1.5px solid #dde;border-radius:8px;padding:8px 16px;font-size:0.82rem;cursor:pointer;color:#555}
+.nav-btn.active{background:#1a3a6b;color:#fff;border-color:#1a3a6b}
+.step-row{display:flex;align-items:center;gap:10px;margin-bottom:16px}
+.step{width:28px;height:28px;border-radius:50%;background:#1a3a6b;color:#fff;display:flex;align-items:center;justify-content:center;font-size:0.8rem;font-weight:600;flex-shrink:0}
+</style>
+</head>
+<body>
+<header>
+  <span style="font-size:1.6rem">🔐</span>
+  <div><h1>TrustChain</h1><div class="sub">Verified Government Document Delivery</div></div>
+  <div class="badge" id="status-badge">Login to continue</div>
+</header>
+
+<div class="main">
+
+<!-- LOGIN SCREEN -->
+<div id="screen-login" style="display:block">
+  <div class="card" style="max-width:420px;margin:0 auto">
+    <h2>Citizen Login</h2>
+    <div id="login-alert"></div>
+
+    <div id="step-aadhaar">
+      <div class="step-row"><div class="step">1</div><span style="font-size:.85rem;color:#555">Enter your Aadhaar number</span></div>
+      <label>Aadhaar Number</label>
+      <input type="text" id="inp-aadhaar" placeholder="12-digit Aadhaar number" maxlength="12"/>
+      <button class="btn" onclick="requestOTP()">Send OTP</button>
+    </div>
+
+    <div id="step-otp" style="display:none">
+      <div class="step-row"><div class="step">2</div><span style="font-size:.85rem;color:#555">Enter OTP sent to your mobile</span></div>
+      <label>One-Time Password</label>
+      <input type="text" id="inp-otp" placeholder="6-digit OTP" maxlength="6"/>
+      <button class="btn green" onclick="verifyOTP()">Verify & Login</button>
+      <p style="font-size:.75rem;color:#888;margin-top:8px;text-align:center">Demo: OTP will be shown in the response</p>
+    </div>
+  </div>
+</div>
+
+<!-- DASHBOARD -->
+<div id="screen-dashboard">
+  <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:16px">
+    <div>
+      <h2 style="font-size:1.1rem;color:#1a3a6b">Welcome, <span id="citizen-name"></span></h2>
+      <p style="font-size:.8rem;color:#888;margin-top:3px">Aadhaar: <span id="citizen-aadhaar"></span></p>
+    </div>
+    <button class="btn outline sm" onclick="logout()">Logout</button>
+  </div>
+
+  <div class="nav">
+    <button class="nav-btn active" onclick="showTab('request')">Request Document</button>
+    <button class="nav-btn" onclick="showTab('mydocs')">My Documents</button>
+    <button class="nav-btn" onclick="showTab('verify-tab')">Verify a Document</button>
+  </div>
+
+  <!-- REQUEST TAB -->
+  <div id="tab-request">
+    <div class="card">
+      <h2>Request a Government Document</h2>
+      <p style="font-size:.82rem;color:#666;margin-bottom:18px">Select the document you need. It will be issued instantly and recorded on blockchain.</p>
+      <div class="doc-grid">
+        <div class="doc-tile" onclick="requestDoc('income_certificate')">
+          <div class="icon">📄</div>
+          <div class="name">Income Certificate</div>
+          <div class="dept">Revenue Department</div>
+        </div>
+        <div class="doc-tile" onclick="requestDoc('caste_certificate')">
+          <div class="icon">📋</div>
+          <div class="name">Caste Certificate</div>
+          <div class="dept">Revenue Department</div>
+        </div>
+        <div class="doc-tile" onclick="requestDoc('residence_certificate')">
+          <div class="icon">🏠</div>
+          <div class="name">Residence Certificate</div>
+          <div class="dept">Municipal Corporation</div>
+        </div>
+        <div class="doc-tile" onclick="requestDoc('medical_certificate')">
+          <div class="icon">🏥</div>
+          <div class="name">Medical Certificate</div>
+          <div class="dept">Health Department</div>
+        </div>
+        <div class="doc-tile" onclick="requestDoc('land_record')">
+          <div class="icon">🗺️</div>
+          <div class="name">Land Record</div>
+          <div class="dept">Revenue Department</div>
+        </div>
+        <div class="doc-tile" onclick="requestDoc('birth_certificate')">
+          <div class="icon">👶</div>
+          <div class="name">Birth Certificate</div>
+          <div class="dept">Municipal Corporation</div>
+        </div>
+      </div>
+      <div id="request-result" style="margin-top:16px"></div>
+    </div>
+  </div>
+
+  <!-- MY DOCS TAB -->
+  <div id="tab-mydocs" style="display:none">
+    <div class="card">
+      <h2>My Documents</h2>
+      <div id="docs-list"></div>
+    </div>
+    <div id="doc-detail-card" style="display:none" class="card">
+      <h2>Document Details</h2>
+      <div id="doc-detail-content"></div>
+      <div style="margin-top:16px">
+        <h2 style="margin-bottom:12px">Blockchain History</h2>
+        <div id="doc-chain-history"></div>
+      </div>
+    </div>
+  </div>
+
+  <!-- VERIFY TAB -->
+  <div id="tab-verify-tab" style="display:none">
+    <div class="card">
+      <h2>Verify a Document</h2>
+      <p style="font-size:.82rem;color:#666;margin-bottom:16px">Enter the document ID and your institution name to verify genuineness.</p>
+      <label>Document ID</label>
+      <input type="text" id="inp-verify-docid" placeholder="e.g. DOC1A2B3C4D"/>
+      <label style="margin-top:12px">Your Name / Institution</label>
+      <input type="text" id="inp-verifier-name" placeholder="e.g. SBI Bank, Anna University"/>
+      <button class="btn" style="margin-top:12px" onclick="verifyDoc()">Verify Document</button>
+      <div id="verify-result" style="margin-top:14px"></div>
+    </div>
+  </div>
+</div>
+
+</div>
+
+<script>
+let citizenData = {};
+
+function showAlert(containerId, msg, type){
+  document.getElementById(containerId).innerHTML =
+    `<div class="alert ${type}">${msg}</div>`;
+}
+
+async function requestOTP(){
+  const a = document.getElementById('inp-aadhaar').value.trim();
+  if(a.length !== 12){ showAlert('login-alert','Enter a valid 12-digit Aadhaar number','error'); return; }
+  const r = await fetch('/api/auth/request-otp',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({aadhaar_no:a})});
+  const d = await r.json();
+  if(d.status === 'otp_sent'){
+    document.getElementById('step-aadhaar').style.display='none';
+    document.getElementById('step-otp').style.display='block';
+    showAlert('login-alert',`${d.message} — Demo OTP: <strong>${d._demo_otp}</strong>`,'info');
+  } else {
+    showAlert('login-alert', d.message, 'error');
+  }
+}
+
+async function verifyOTP(){
+  const a = document.getElementById('inp-aadhaar').value.trim();
+  const o = document.getElementById('inp-otp').value.trim();
+  const r = await fetch('/api/auth/verify-otp',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({aadhaar_no:a,otp:o})});
+  const d = await r.json();
+  if(d.status === 'verified'){
+    citizenData = {aadhaar: a, name: d.name, masked: d.aadhaar};
+    document.getElementById('screen-login').style.display='none';
+    document.getElementById('screen-dashboard').style.display='block';
+    document.getElementById('citizen-name').textContent = d.name;
+    document.getElementById('citizen-aadhaar').textContent = d.aadhaar;
+    document.getElementById('status-badge').textContent = '● Logged in';
+    document.getElementById('status-badge').style.background='#22c55e';
+  } else {
+    showAlert('login-alert', d.message, 'error');
+  }
+}
+
+function showTab(tab){
+  ['request','mydocs','verify-tab'].forEach(t=>{
+    document.getElementById('tab-'+t).style.display = t===tab?'block':'none';
+  });
+  document.querySelectorAll('.nav-btn').forEach((b,i)=>{
+    b.classList.toggle('active', ['request','mydocs','verify-tab'][i]===tab);
+  });
+  if(tab==='mydocs') loadMyDocs();
+}
+
+async function requestDoc(type){
+  const r = await fetch('/api/document/request',{method:'POST',headers:{'Content-Type':'application/json'},
+    body:JSON.stringify({aadhaar_no:citizenData.aadhaar, doc_type:type})});
+  const d = await r.json();
+  if(d.status==='issued'){
+    document.getElementById('request-result').innerHTML = `
+      <div class="alert success">
+        <strong>Document Issued Successfully</strong><br>
+        Doc ID: <code>${d.doc_id}</code><br>
+        Issued by: ${d.issued_by}<br>
+        Blockchain Hash: <span class="hash-pill">${d.block_hash}</span><br>
+        <small>Your document is now permanently recorded on the blockchain.</small>
+      </div>`;
+  }
+}
+
+async function loadMyDocs(){
+  const r = await fetch('/api/citizen/documents',{method:'POST',headers:{'Content-Type':'application/json'},
+    body:JSON.stringify({aadhaar_no:citizenData.aadhaar})});
+  const d = await r.json();
+  const el = document.getElementById('docs-list');
+  if(!d.documents.length){
+    el.innerHTML='<p style="color:#888;font-size:.85rem">No documents yet. Go to Request Document to get started.</p>';
+    return;
+  }
+  el.innerHTML = '<div class="doc-list">' + d.documents.map(doc=>`
+    <div class="doc-item">
+      <div class="doc-info">
+        <div class="doc-name">${doc.doc_type.replace(/_/g,' ').replace(/\b\w/g,c=>c.toUpperCase())}</div>
+        <div class="doc-meta">${doc.issued_by} · ${doc.issued_on}</div>
+      </div>
+      <button class="btn sm" onclick="viewDoc('${doc.doc_id}')">View</button>
+      <button class="btn sm outline" onclick="shareDoc('${doc.doc_id}')">Share</button>
+    </div>`).join('') + '</div>';
+}
+
+async function viewDoc(docId){
+  const r = await fetch('/api/document/download/'+docId);
+  const d = await r.json();
+  document.getElementById('doc-detail-card').style.display='block';
+  document.getElementById('doc-detail-content').innerHTML = `
+    <div style="background:#f8faff;border:1px solid #dde6f7;border-radius:8px;padding:16px;margin-bottom:12px">
+      <p style="font-size:.82rem;color:#555;line-height:1.7">${d.content}</p>
+    </div>
+    <p style="font-size:.78rem;color:#888">Doc ID: <code>${d.doc_id}</code></p>
+    <p style="font-size:.78rem;color:#888">Issued by: ${d.issued_by} on ${d.issued_on}</p>
+    <p style="font-size:.78rem;color:#888;margin-top:4px">Verification code: <span class="hash-pill">${d.verification_code}</span></p>`;
+
+  const hr = await fetch('/api/chain/history/'+docId);
+  const hd = await hr.json();
+  document.getElementById('doc-chain-history').innerHTML =
+    hd.history.map(b=>`
+      <div class="chain-block">
+        <div class="block-header">Block #${b.index} — ${b.event_type} — ${b.timestamp}</div>
+        <div class="block-hash">Hash: ${b.hash}</div>
+      </div>`).join('') || '<p style="color:#888;font-size:.82rem">No chain history yet</p>';
+}
+
+function shareDoc(docId){
+  alert(`Share this Document ID with the verifier:\n\n${docId}\n\nThey can verify it at http://localhost:5000 → Verify a Document`);
+}
+
+async function verifyDoc(){
+  const docId    = document.getElementById('inp-verify-docid').value.trim();
+  const verifier = document.getElementById('inp-verifier-name').value.trim();
+  if(!docId || !verifier){ alert('Please fill both fields'); return; }
+  const r = await fetch('/api/verify',{method:'POST',headers:{'Content-Type':'application/json'},
+    body:JSON.stringify({doc_id:docId, verifier_name:verifier, verifier_type:'institution'})});
+  const d = await r.json();
+  const isGenuine = d.status === 'GENUINE';
+  document.getElementById('verify-result').innerHTML = `
+    <div class="alert ${isGenuine?'success':'error'}">
+      <strong>${isGenuine ? '✓ GENUINE — Document Verified' : '✗ TAMPERED — Do Not Accept'}</strong><br>
+      ${d.message}<br>
+      <small>Issued by: ${d.issued_by} on ${d.issued_on}</small>
+    </div>`;
+}
+
+function logout(){
+  citizenData = {};
+  document.getElementById('screen-dashboard').style.display='none';
+  document.getElementById('screen-login').style.display='block';
+  document.getElementById('step-aadhaar').style.display='block';
+  document.getElementById('step-otp').style.display='none';
+  document.getElementById('inp-aadhaar').value='';
+  document.getElementById('inp-otp').value='';
+  document.getElementById('login-alert').innerHTML='';
+  document.getElementById('status-badge').textContent='Login to continue';
+  document.getElementById('status-badge').style.background='#6b7280';
+}
+</script>
+</body>
+</html>
