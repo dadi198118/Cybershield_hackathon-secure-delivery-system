@@ -356,4 +356,6 @@ if __name__ == "__main__":
     print("\n🔐 TrustChain server starting on http://localhost:5000")
     print("   Citizen portal → http://localhost:5000")
     print("   Admin dashboard → http://localhost:5000/admin\n")
-    app.run(debug=True, port=5000, threaded=True)
+    port = int(os.environ.get("PORT", 5000))
+    debug = not os.environ.get("RENDER")
+    app.run(host="0.0.0.0", port=port, debug=debug, threaded=True)
