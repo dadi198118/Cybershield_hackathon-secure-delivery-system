@@ -359,3 +359,8 @@ if __name__ == "__main__":
     port = int(os.environ.get("PORT", 5000))
     debug = not os.environ.get("RENDER")
     app.run(host="0.0.0.0", port=port, debug=debug, threaded=True)
+@app.route("/api/chain/blocks")
+def chain_blocks():
+    from blockchain_logger import _load
+    chain = _load()
+    return jsonify({"blocks": list(reversed(chain))})
