@@ -132,6 +132,31 @@ async function checkChain(){
 
 refreshStats();
 setInterval(refreshStats, 3000);
+// load recent blockchain events on page open
+async function loadRecentEvents() {
+  const r = await fetch('/api/chain/blocks');
+  const d = await r.json();
+  if (!d.blocks) return;
+  // show last 20 blocks as feed rows
+  d.blocks.slice(0, 20).forEach(block => {
+    if (block.event_type === 'GENESIS') return;
+    appendFeed({
+      type:      block.event_type === 'DOCUMENT_ISSUED' ? 'DOCUMENT_ISSUED'
+               : block.event_type === 'VERIFICATION'    ? 'VERIFICATION'
+               : 'SUSPICIOUS',
+      timestamp: block.timestamp.split(' ')[1],
+      doc_type:  block.data?.doc_type || '',
+      issued_to: block.data?.citizen  || '',
+      doc_id:    block.data?.doc_id   || '',
+      verifier:  block.data?.verifier || '',
+      result:    block.data?.result   || '',
+      signals:   block.data?.signals  || '',
+      block:     block.hash?.slice(0,16) + '...',
+    });
+  });
+}
+
+loadRecentEvents();
 </script>
 </body>
 </html>
