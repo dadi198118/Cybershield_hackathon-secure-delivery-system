@@ -2,7 +2,7 @@ services:
   - type: web
     name: trustchain
     env: python
-    buildCommand: "pip install -r requirements.txt && python backend/database_setup.py"
+    buildCommand: "pip install -r requirement.txt && python backend/database_setup.py"
     startCommand: "gunicorn --chdir backend app:app --bind 0.0.0.0:$PORT"
     envVars:
       - key: PYTHON_VERSION
